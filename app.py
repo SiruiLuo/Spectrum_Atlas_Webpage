@@ -25,7 +25,7 @@ DB_CONFIG = {
     'dbname': 'spectrum_atlas',
     'user': 'atlas_user',
     'password': 'Paic2013',
-    'host': '100.82.123.4'
+    'host': '127.0.0.1'
 }
 
 # Signal bands configuration
@@ -255,7 +255,28 @@ def static_files(filename):
 @app.route('/pics/<path:filename>')
 def pics(filename):
     """Serve image files from pics directory"""
-    return send_from_directory('pics', filename)
+    try:
+        # 解码URL编码的文件名
+        from urllib.parse import unquote
+        decoded_filename = unquote(filename)
+        
+        # 检查文件是否存在
+        file_path = os.path.join('pics', decoded_filename)
+        if not os.path.exists(file_path):
+            print(f"图片文件不存在: {file_path}")
+            return jsonify({'error': f'File not found: {decoded_filename}'}), 404
+        
+        # 检查文件权限
+        if not os.access(file_path, os.R_OK):
+            print(f"图片文件无读取权限: {file_path}")
+            return jsonify({'error': f'Permission denied: {decoded_filename}'}), 403
+        
+        print(f"成功提供图片文件: {decoded_filename}")
+        return send_from_directory('pics', decoded_filename)
+        
+    except Exception as e:
+        print(f"提供图片文件时出错: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/maps/<path:filename>')
 def maps(filename):
